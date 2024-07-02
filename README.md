@@ -210,7 +210,7 @@ public class BenchmarkDicAlloc
 }
 ```
 
-Benchmark Performance With Dictionary
+Benchmark Performance With Dictionary code
 ```csharp
 [MemoryDiagnoser]
 public class BenchmarkDicAlloc
