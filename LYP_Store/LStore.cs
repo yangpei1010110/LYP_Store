@@ -12,7 +12,7 @@ namespace LYP_Utils.LYP_Store
     ///     3. try query data by handle cache (non alloc)
     ///     4. try update data by handle cache (non alloc)
     /// </summary>
-    public class LStore<TKey, TValue> : IReadOnlyCollection<TValue>
+    public class LStore<TKey, TValue> : IReadOnlyCollection<KeyValuePair<TKey, TValue>>
     {
         public  TimeSpan             _lockTimeout = TimeSpan.FromSeconds(1);
         private ReaderWriterLockSlim _lock        = new ReaderWriterLockSlim(LockRecursionPolicy.SupportsRecursion);
@@ -305,11 +305,11 @@ namespace LYP_Utils.LYP_Store
         /// <summary>
         ///     not thread safe
         /// </summary>
-        public IEnumerator<TValue> GetEnumerator()
+        public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator()
         {
-            foreach (int valueIndex in _keyToHandle.Values)
+            foreach (KeyValuePair<TKey, int> kv in _keyToHandle)
             {
-                yield return ValueArray[valueIndex];
+                yield return new KeyValuePair<TKey, TValue>(kv.Key, ValueArray[kv.Value]);
             }
         }
 
@@ -319,6 +319,107 @@ namespace LYP_Utils.LYP_Store
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         public int Count => _keyToHandle.Count;
+
+        #endregion
+
+        #region Snapshot
+
+        public void Load(KeyValuePair<TKey, TValue>[] snapshot)
+        {
+            Clear();
+            if (!_lock.TryEnterWriteLock(_lockTimeout))
+            {
+                return;
+            }
+
+            try
+            {
+                ResizeNewArray(snapshot.Length);
+                foreach (KeyValuePair<TKey, TValue> pair in snapshot)
+                {
+                    int index = _handlePool.RentOrAddHandle();
+                    HandleVersionArray[index] += 1;
+                    ValueArray[index] = pair.Value;
+                    _keyToHandle.Add(pair.Key, index);
+                }
+            }
+            finally
+            {
+                _lock.ExitWriteLock();
+            }
+        }
+
+        public KeyValuePair<TKey, TValue>[] GetSnapshot()
+        {
+            if (typeof(TValue).IsValueType)
+            {
+                return GetSnapshotWithStructValue();
+            }
+            else if (ValueArray is ICloneable[])
+            {
+                return GetSnapshotWithCloneableValue();
+            }
+            else
+            {
+                throw new NotSupportedException();
+            }
+        }
+
+        private KeyValuePair<TKey, TValue>[] GetSnapshotWithStructValue()
+        {
+            if (!_lock.TryEnterReadLock(_lockTimeout))
+            {
+                return Array.Empty<KeyValuePair<TKey, TValue>>();
+            }
+
+            try
+            {
+                KeyValuePair<TKey, TValue>[] result = new KeyValuePair<TKey, TValue>[_keyToHandle.Count];
+                int index = 0;
+                foreach (KeyValuePair<TKey, int> pair in _keyToHandle)
+                {
+                    result[index] = new KeyValuePair<TKey, TValue>(pair.Key, ValueArray[pair.Value]);
+                    index += 1;
+                }
+
+                return result;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
+
+        private KeyValuePair<TKey, TValue>[] GetSnapshotWithCloneableValue()
+        {
+            if (!_lock.TryEnterReadLock(_lockTimeout))
+            {
+                return Array.Empty<KeyValuePair<TKey, TValue>>();
+            }
+
+            if (ValueArray is ICloneable[])
+            {
+            }
+
+            try
+            {
+                KeyValuePair<TKey, TValue>[] result = new KeyValuePair<TKey, TValue>[_keyToHandle.Count];
+                int index = 0;
+                ICloneable[] cloneableArray = ValueArray as ICloneable[];
+                foreach (KeyValuePair<TKey, int> pair in _keyToHandle)
+                {
+                    result[index] =
+                        new KeyValuePair<TKey, TValue>(pair.Key, (TValue)cloneableArray?[pair.Value].Clone());
+                    index += 1;
+                }
+
+                return result;
+            }
+            finally
+            {
+                _lock.ExitReadLock();
+            }
+        }
 
         #endregion
     }
