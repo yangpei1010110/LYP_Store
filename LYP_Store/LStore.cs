@@ -44,7 +44,7 @@ namespace LYP_Utils.LYP_Store
         /// <summary>
         ///     check handle is valid
         /// </summary>
-        private bool ValidateHandle(in LHandle<TKey> handle)
+        public bool ValidateHandle(in LHandle<TKey> handle)
         {
             if (handle.Handle < 0 || handle.Handle >= ValueArray.Length)
             {
