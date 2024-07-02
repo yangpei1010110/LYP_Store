@@ -1,4 +1,4 @@
-thread safe zero alloc query store in memory
+dotnet standard 2.0 - Thread Safe Zero Alloc Query Dictionary In Memory
 1. add or update data by key and cache the handle (alloc)
 2. remove data by handle cache (non alloc)
 3. try query data by handle cache (non alloc)
