@@ -397,10 +397,6 @@ namespace LYP_Utils.LYP_Store
                 return Array.Empty<KeyValuePair<TKey, TValue>>();
             }
 
-            if (ValueArray is ICloneable[])
-            {
-            }
-
             try
             {
                 KeyValuePair<TKey, TValue>[] result = new KeyValuePair<TKey, TValue>[_keyToHandle.Count];
