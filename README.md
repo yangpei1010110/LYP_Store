@@ -4,6 +4,24 @@ dotnet standard 2.0 - Thread Safe Zero Alloc Query Dictionary In Memory
 3. try query data by handle cache (non alloc)
 4. try update data by handle cache (non alloc)
 
+How To Use This:
+Example:
+```csharp
+var store = new LStore<string, int>();
+
+// add or update
+var addOrUpdateResult = store.TryAddOrUpdate("empty", 0, out var handle);
+
+// query
+var queryResult = store.TryQuery(handle, out var emptyString);
+
+// update
+var updateResult = store.TryUpdate(handle, 123);
+
+// remove
+var removeResult = store.TryRemove(handle);
+```
+
 Benchmark Alloc Test
 ```Benchmark
 | Method      | TestDataCount | RandomReadCount | Mean         | Allocated |
