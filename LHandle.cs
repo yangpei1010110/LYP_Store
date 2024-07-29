@@ -1,4 +1,4 @@
-﻿namespace LYP_Utils.LYP_Store
+﻿namespace LYP_Utils
 {
     public readonly struct LHandle<TKey>
     {

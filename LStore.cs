@@ -3,7 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Threading;
 
-namespace LYP_Utils.LYP_Store
+namespace LYP_Utils
 {
     /// <summary>
     ///     thread safe zero alloc query store in memory
@@ -326,7 +326,6 @@ namespace LYP_Utils.LYP_Store
 
         public void Load(KeyValuePair<TKey, TValue>[] snapshot)
         {
-            Clear();
             if (!_lock.TryEnterWriteLock(_lockTimeout))
             {
                 return;
@@ -334,6 +333,7 @@ namespace LYP_Utils.LYP_Store
 
             try
             {
+                Clear();
                 ResizeNewArray(snapshot.Length);
                 foreach (KeyValuePair<TKey, TValue> pair in snapshot)
                 {
@@ -404,8 +404,10 @@ namespace LYP_Utils.LYP_Store
                 ICloneable[] cloneableArray = ValueArray as ICloneable[];
                 foreach (KeyValuePair<TKey, int> pair in _keyToHandle)
                 {
-                    result[index] =
-                        new KeyValuePair<TKey, TValue>(pair.Key, (TValue)cloneableArray?[pair.Value].Clone());
+                    result[index] = new KeyValuePair<TKey, TValue>(
+                        pair.Key,
+                        (TValue)cloneableArray?[pair.Value].Clone()
+                    );
                     index += 1;
                 }
 
